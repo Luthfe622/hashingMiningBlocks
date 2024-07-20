@@ -1,28 +1,37 @@
-#!/bin/python
 import hashlib
-import os
 import random
-
 
 def mine_block(k, prev_hash, rand_lines):
     """
-        k - Number of trailing zeros in the binary representation (integer)
-        prev_hash - the hash of the previous block (bytes)
-        rand_lines - a set of "transactions," i.e., data to be included in this block (list of strings)
+    k - Number of trailing zeros in the binary representation (integer)
+    prev_hash - the hash of the previous block (bytes)
+    rand_lines - a set of "transactions," i.e., data to be included in this block (list of strings)
 
-        Complete this function to find a nonce such that 
-        sha256( prev_hash + rand_lines + nonce )
-        has k trailing zeros in its *binary* representation
+    Complete this function to find a nonce such that 
+    sha256( prev_hash + rand_lines + nonce )
+    has k trailing zeros in its *binary* representation
     """
     if not isinstance(k, int) or k < 0:
         print("mine_block expects positive integer")
         return b'\x00'
 
-    # TODO your code to find a nonce here
+    target = '0' * k
+    nonce = 0
 
-    assert isinstance(nonce, bytes), 'nonce should be of type bytes'
-    return nonce
+    while True:
+        # Prepare the data by concatenating previous hash, transactions, and nonce
+        data = prev_hash + ''.join(rand_lines).encode('utf-8') + str(nonce).encode('utf-8')
+        hash_result = hashlib.sha256(data).hexdigest()
+        # Convert the hash result to binary
+        hash_binary = bin(int(hash_result, 16))[2:].zfill(256)
 
+        # Check if the binary hash ends with the required number of trailing zeros
+        if hash_binary[-k:] == target:
+            break
+
+        nonce += 1
+
+    return str(nonce).encode('utf-8')
 
 def get_random_lines(filename, quantity):
     """
@@ -40,7 +49,6 @@ def get_random_lines(filename, quantity):
         random_lines.append(lines[random.randint(0, quantity - 1)])
     return random_lines
 
-
 if __name__ == '__main__':
     # This code will be helpful for your testing
     filename = "bitcoin_text.txt"
@@ -52,5 +60,7 @@ if __name__ == '__main__':
     diff = 20
 
     rand_lines = get_random_lines(filename, num_lines)
-    nonce = mine_block(diff, rand_lines)
+    prev_hash = hashlib.sha256("previous_hash".encode('utf-8')).digest()
+    nonce = mine_block(diff, prev_hash, rand_lines)
     print(nonce)
+
